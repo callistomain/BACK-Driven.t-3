@@ -107,6 +107,15 @@ describe("GET /hotels", () => {
     });
 
     describe("/:hotelId", () => {
+      it("should respond with status 404 when hotel doesn't exits", async () => {
+        const user = await createUser();
+        const token = await generateValidToken(user);
+  
+        const response = await server.get("/hotels/0").set("Authorization", `Bearer ${token}`);
+  
+        expect(response.status).toEqual(httpStatus.NOT_FOUND);
+      });
+
       it("should respond with status 200 with specific hotel data and rooms", async () => {
         const user = await createUser();
         const token = await generateValidToken(user);

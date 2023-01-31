@@ -19,7 +19,10 @@ async function getAll(userId: number) {
 }
 
 async function getHotelById(id: number) {
-  return await hotelsRepository.findById(id);
+  const hotel = await hotelsRepository.findById(id);
+  if (!hotel) throw notFoundError();
+
+  return hotel;
 }
 
 // EXPORT ======================================================================
