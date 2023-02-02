@@ -1,4 +1,4 @@
-import { notFoundError, unauthorizedError } from "@/errors";
+import { notFoundError, paymentRequiredError } from "@/errors";
 import enrollmentRepository from "@/repositories/enrollment-repository";
 import hotelsRepository from "@/repositories/hotels-repository";
 import ticketRepository from "@/repositories/ticket-repository";
@@ -6,6 +6,21 @@ import ticketRepository from "@/repositories/ticket-repository";
 // FIND ========================================================================
 
 async function getAll(userId: number) {
+  await paymentCheck(userId);
+  return await hotelsRepository.findAll();
+}
+
+async function getHotelById(id: number, userId: number) {
+  const hotel = await hotelsRepository.findById(id);
+  if (!hotel) throw notFoundError();
+  await paymentCheck(userId);
+
+  return hotel;
+}
+
+// HELPERS =====================================================================
+
+async function paymentCheck(userId: number) {
   const enrollment = await enrollmentRepository.findByUserId(userId);
   if (!enrollment) throw notFoundError();
 
@@ -13,16 +28,7 @@ async function getAll(userId: number) {
   if (!ticket) throw notFoundError();
 
   const restraints = (ticket.status !== "PAID" || !ticket.TicketType.includesHotel);
-  if (restraints) throw unauthorizedError();
-
-  return await hotelsRepository.findAll();
-}
-
-async function getHotelById(id: number) {
-  const hotel = await hotelsRepository.findById(id);
-  if (!hotel) throw notFoundError();
-
-  return hotel;
+  if (restraints) throw paymentRequiredError();
 }
 
 // EXPORT ======================================================================
