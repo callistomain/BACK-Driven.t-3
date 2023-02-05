@@ -1,4 +1,4 @@
-import { notFoundError, paymentRequiredError } from "@/errors";
+import { badRequestError, notFoundError, paymentRequiredError } from "@/errors";
 import enrollmentRepository from "@/repositories/enrollment-repository";
 import hotelsRepository from "@/repositories/hotels-repository";
 import ticketRepository from "@/repositories/ticket-repository";
@@ -11,9 +11,10 @@ async function getAll(userId: number) {
 }
 
 async function getHotelById(id: number, userId: number) {
+  if (isNaN(id)) throw badRequestError();
+  await paymentCheck(userId);
   const hotel = await hotelsRepository.findById(id);
   if (!hotel) throw notFoundError();
-  await paymentCheck(userId);
 
   return hotel;
 }
@@ -27,7 +28,8 @@ async function paymentCheck(userId: number) {
   const ticket = await ticketRepository.findTicketByEnrollmentId(enrollment.id);
   if (!ticket) throw notFoundError();
 
-  const restraints = (ticket.status !== "PAID" || !ticket.TicketType.includesHotel);
+  if (ticket.status !== "PAID") throw paymentRequiredError();
+  const restraints = (ticket.TicketType.isRemote || ticket.TicketType.includesHotel === false);
   if (restraints) throw paymentRequiredError();
 }
 
